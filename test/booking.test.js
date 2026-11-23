@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { availableTimes, validateApplication } from '../api/_shared.js';
 import { GET } from '../api/slots.js';
 import { POST, applicantMessage } from '../api/consultations.js';
+import { POST as adminLogin, GET as adminList } from '../api/admin.js';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
@@ -102,4 +103,27 @@ test('successful booking is stored before notification status is updated', async
   assert.equal(calls[0].body.p_ip_hash.length, 64);
   assert.equal(calls[1].method, 'PATCH');
   assert.equal(calls[1].body.sms_status, 'skipped');
+});
+
+test('admin requests require a signed login cookie', async () => {
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'test-secret';
+  process.env.ADMIN_ACCESS_PASSWORD = 'a-long-private-admin-password';
+  let databaseReads = 0;
+  globalThis.fetch = async () => {
+    databaseReads++;
+    return new Response(JSON.stringify([{ id: 'request-1', question: '포트폴리오 문의' }]));
+  };
+  const url = 'https://example.test/api/admin';
+  assert.equal((await adminList(new Request(url))).status, 401);
+  assert.equal(databaseReads, 0);
+  const wrong = await adminLogin(new Request(url, { method: 'POST', body: JSON.stringify({ password: 'wrong' }) }));
+  assert.equal(wrong.status, 401);
+  const login = await adminLogin(new Request(url, { method: 'POST', body: JSON.stringify({ password: process.env.ADMIN_ACCESS_PASSWORD }) }));
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  const list = await adminList(new Request(url, { headers: { cookie } }));
+  assert.equal(list.status, 200);
+  assert.equal((await list.json()).requests[0].question, '포트폴리오 문의');
+  assert.equal(databaseReads, 1);
 });
