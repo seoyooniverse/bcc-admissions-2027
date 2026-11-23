@@ -13,7 +13,7 @@ export async function POST(request) {
   let id;
   try {
     const clientIp = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || 'unknown';
-    const ipHash = createHmac('sha256', process.env.SUPABASE_SERVICE_ROLE_KEY).update(clientIp).digest('hex');
+    const ipHash = createHmac('sha256', process.env.SUPABASE_SECRET_KEY).update(clientIp).digest('hex');
     const { response, body } = await databaseRequest('rpc/submit_consultation', {
       method: 'POST',
       body: JSON.stringify({ p_application: application, p_ip_hash: ipHash }),

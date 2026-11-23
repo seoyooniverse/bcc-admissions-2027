@@ -5,7 +5,7 @@ export const json = (data, status = 200) => new Response(JSON.stringify(data), {
 
 export function databaseConfig() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) return null;
   return { url, key };
 }
@@ -17,7 +17,6 @@ export async function databaseRequest(path, options = {}) {
     ...options,
     headers: {
       apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
