@@ -108,9 +108,12 @@ test('successful booking is stored before notification status is updated', async
 test('admin requests require a signed login cookie', async () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
   process.env.SUPABASE_SECRET_KEY = 'test-secret';
-  process.env.ADMIN_ACCESS_PASSWORD = 'a-long-private-admin-password';
+  process.env.ADMIN_ACCESS_PASSWORD = '1234567';
   let databaseReads = 0;
-  globalThis.fetch = async () => {
+  globalThis.fetch = async (url, options) => {
+    if (String(url).includes('consultation_rate_limits')) {
+      return new Response(options.method === 'POST' ? null : JSON.stringify([]), { status: options.method === 'POST' ? 204 : 200 });
+    }
     databaseReads++;
     return new Response(JSON.stringify([{ id: 'request-1', question: '포트폴리오 문의' }]));
   };
@@ -126,4 +129,20 @@ test('admin requests require a signed login cookie', async () => {
   assert.equal(list.status, 200);
   assert.equal((await list.json()).requests[0].question, '포트폴리오 문의');
   assert.equal(databaseReads, 1);
+});
+
+test('admin login stops after five attempts from the same address', async () => {
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'test-secret';
+  process.env.ADMIN_ACCESS_PASSWORD = '1234567';
+  let attempts = 5;
+  globalThis.fetch = async (url, options) => {
+    if (options.method === 'POST') attempts++;
+    return new Response(JSON.stringify([{ request_count: attempts }]));
+  };
+  const response = await adminLogin(new Request('https://example.test/api/admin', {
+    method: 'POST', body: JSON.stringify({ password: '1234567' }),
+  }));
+  assert.equal(response.status, 429);
+  assert.equal(attempts, 5);
 });
