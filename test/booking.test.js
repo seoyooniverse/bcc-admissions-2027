@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { availableTimes, validateApplication } from '../api/_shared.js';
 import { GET } from '../api/slots.js';
-import { POST } from '../api/consultations.js';
+import { POST, applicantMessage } from '../api/consultations.js';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
@@ -24,6 +24,23 @@ test('only declared 30-minute slots are accepted', () => {
   assert.equal(validateApplication(application)?.phone, '01012345678');
   assert.equal(validateApplication({ ...application, time: '12:00–12:30' }), null);
   assert.equal(validateApplication({ ...application, consent: false }), null);
+});
+
+test('applicant SMS distinguishes a confirmed visit from a callback request', () => {
+  const booking = applicantMessage({
+    kind: 'booking', major: 'media', applicant_name: '홍길동',
+    consultation_date: '2026-12-01', consultation_time: '10:00–10:30',
+    consultation_method: '명지대학교 방문 상담(권장)',
+  });
+  assert.match(booking, /12월 1일\(화\) 10:00~10:30/);
+  assert.match(booking, /명지대학교 인문캠퍼스/);
+  assert.match(booking, /해당 번호로 연락해 주세요/);
+  const callback = applicantMessage({
+    kind: 'callback', major: 'webtoon', applicant_name: '홍길동',
+    callback_time: '저녁', callback_method: '온라인 혹은 유선 상담',
+  });
+  assert.match(callback, /연락 요청이 접수되었습니다/);
+  assert.doesNotMatch(callback, /예약이 완료되었습니다/);
 });
 
 test('duplicate booking returns conflict and sends no SMS', async () => {
