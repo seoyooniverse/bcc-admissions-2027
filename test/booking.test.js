@@ -4,6 +4,8 @@ import { availableTimes, validateApplication } from '../api/_shared.js';
 import { GET } from '../api/slots.js';
 import { POST, applicantMessage } from '../api/consultations.js';
 import { POST as adminLogin, GET as adminList } from '../api/admin.js';
+import { PATCH as adminCancel } from '../api/admin.js';
+import { createHmac } from 'node:crypto';
 
 const originalFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
@@ -145,4 +147,32 @@ test('admin login stops after five attempts from the same address', async () => 
   }));
   assert.equal(response.status, 429);
   assert.equal(attempts, 5);
+});
+
+test('only an authenticated same-origin admin can cancel a confirmed booking', async () => {
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'test-secret';
+  process.env.ADMIN_ACCESS_PASSWORD = '1234567';
+  const id = '11111111-1111-4111-8111-111111111111';
+  const url = 'https://example.test/api/admin';
+  const request = (cookie, origin = 'https://example.test') => new Request(url, {
+    method: 'PATCH', headers: { cookie, origin, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  let writes = 0;
+  globalThis.fetch = async (path, options) => {
+    writes++;
+    assert.match(String(path), /kind=eq\.booking&status=eq\.confirmed/);
+    assert.deepEqual(JSON.parse(options.body), { status: 'cancelled' });
+    return new Response(JSON.stringify([{ id, status: 'cancelled' }]));
+  };
+  assert.equal((await adminCancel(request(''))).status, 401);
+  const expires = String(Date.now() + 60_000);
+  const signature = createHmac('sha256', 'test-secret:1234567').update(expires).digest('hex');
+  const cookie = `bcc_admin=${expires}.${signature}`;
+  assert.equal((await adminCancel(request(cookie, 'https://another.test'))).status, 403);
+  const cancelled = await adminCancel(request(cookie));
+  assert.equal(cancelled.status, 200);
+  assert.equal((await cancelled.json()).status, 'cancelled');
+  assert.equal(writes, 1);
 });

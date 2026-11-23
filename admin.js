@@ -32,7 +32,31 @@ function render() {
     field(dl, '유입 경로', row.source);
     const question = add(article, 'dl', '', 'question');
     field(question, '문의 내용', row.question || '입력한 내용 없음');
+    if (row.kind === 'booking' && row.status === 'confirmed') {
+      const cancel = add(article, 'button', '예약 취소', 'cancel-button');
+      cancel.type = 'button';
+      cancel.addEventListener('click', () => cancelBooking(row, cancel));
+    }
   }
+}
+
+async function cancelBooking(row, button) {
+  if (!window.confirm(`${row.applicant_name}님의 ${row.consultation_date} ${row.consultation_time} 예약을 취소할까요?\n취소하면 이 시간이 다시 예약 가능해집니다. 신청자에게는 직접 안내해 주세요.`)) return;
+  button.disabled = true;
+  listMessage.textContent = '';
+  const response = await fetch('/api/admin', {
+    method: 'PATCH', credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: row.id }),
+  }).catch(() => null);
+  const body = await response?.json().catch(() => ({}));
+  if (!response?.ok) {
+    listMessage.textContent = body?.error || '예약을 취소하지 못했습니다.';
+    button.disabled = false;
+    return;
+  }
+  await load();
+  listMessage.textContent = '예약을 취소했습니다. 신청자에게 직접 안내해 주세요.';
 }
 
 async function load() {

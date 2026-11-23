@@ -61,6 +61,29 @@ export async function GET(request) {
   }
 }
 
+export async function PATCH(request) {
+  if (!authorized(request)) return reply({ error: '로그인이 필요합니다.' }, 401);
+  if (request.headers.get('origin') !== new URL(request.url).origin) return reply({ error: '요청을 확인할 수 없습니다.' }, 403);
+  let input;
+  try { input = await request.json(); } catch { return reply({ error: '예약 정보를 확인해 주세요.' }, 400); }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input?.id || '')) {
+    return reply({ error: '예약 정보를 확인해 주세요.' }, 400);
+  }
+  try {
+    const path = `consultation_requests?id=eq.${input.id}&kind=eq.booking&status=eq.confirmed&select=id,status`;
+    const { response, body } = await databaseRequest(path, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ status: 'cancelled' }),
+    });
+    if (!response.ok || !Array.isArray(body)) throw new Error('Cancel failed');
+    if (!body.length) return reply({ error: '이미 취소됐거나 예약을 찾을 수 없습니다.' }, 409);
+    return reply({ id: body[0].id, status: 'cancelled' });
+  } catch {
+    return reply({ error: '예약을 취소하지 못했습니다. 다시 시도해 주세요.' }, 503);
+  }
+}
+
 export async function DELETE() {
   return reply({ ok: true }, 200, `${COOKIE}=; HttpOnly; Secure; SameSite=Strict; Path=/api/admin; Max-Age=0`);
 }
