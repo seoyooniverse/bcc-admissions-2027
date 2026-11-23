@@ -46,7 +46,7 @@ export async function POST(request) {
     : `일정 조율 요청 (${application.callback_time}, ${application.callback_method})`;
   const manager = phoneDigits(process.env.CONSULTATION_MANAGER_NUMBER);
   const messages = [{ to: application.phone, text: applicantMessage(application) }];
-  if (manager && manager !== application.phone) {
+  if (manager) {
     messages.push({ to: manager, text: `[BCC 상담 신청] ${application.applicant_name} / ${application.phone} / ${majorName} / ${detail} / 유입 ${application.source}` });
   }
   let sms = { status: 'skipped' };

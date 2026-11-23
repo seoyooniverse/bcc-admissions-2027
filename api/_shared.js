@@ -92,10 +92,14 @@ export async function sendSolapi(messages) {
       Authorization: `HMAC-SHA256 apiKey=${key}, date=${date}, salt=${salt}, signature=${signature}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ messages: messages.map(message => ({ ...message, from: phoneDigits(sender), autoTypeDetect: true })) }),
+    body: JSON.stringify({
+      messages: messages.map(message => ({ ...message, from: phoneDigits(sender), autoTypeDetect: true })),
+      allowDuplicates: new Set(messages.map(message => phoneDigits(message.to))).size < messages.length,
+    }),
   });
   const body = await response.json().catch(() => null);
-  if (!response.ok || body?.failedMessageList?.length || body?.groupInfo?.count?.registeredFailed) {
+  if (!response.ok || body?.failedMessageList?.length || body?.groupInfo?.count?.registeredFailed
+      || (body?.groupInfo?.count?.registeredSuccess !== undefined && body.groupInfo.count.registeredSuccess !== messages.length)) {
     throw new Error('Solapi did not accept all messages');
   }
   return { status: 'sent', groupId: body?.groupInfo?.groupId || null };

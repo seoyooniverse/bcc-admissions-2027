@@ -107,6 +107,36 @@ test('successful booking is stored before notification status is updated', async
   assert.equal(calls[1].body.sms_status, 'skipped');
 });
 
+test('manager receives a separate message when using the applicant phone for a test', async () => {
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'test-key';
+  process.env.SOLAPI_API_KEY = 'api-key';
+  process.env.SOLAPI_API_SECRET = 'api-secret';
+  process.env.SOLAPI_SENDER_NUMBER = '01012345678';
+  process.env.CONSULTATION_MANAGER_NUMBER = '01012345678';
+  let solapiBody;
+  globalThis.fetch = async (url, options) => {
+    if (String(url).includes('api.solapi.com')) {
+      solapiBody = JSON.parse(options.body);
+      return new Response(JSON.stringify({ groupInfo: { groupId: 'group-1', count: { registeredSuccess: 2 } }, failedMessageList: [] }));
+    }
+    return options.method === 'POST'
+      ? new Response(JSON.stringify('application-1'))
+      : new Response(null, { status: 204 });
+  };
+  const response = await POST(new Request('https://example.test/api/consultations', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      kind: 'booking', major: 'media', name: '홍길동', phone: '01012345678',
+      role: 'student', consent: true, date: '2026-12-01', time: '10:00–10:30', method: '명지대학교 방문 상담(권장)',
+    }),
+  }));
+  assert.equal(response.status, 201);
+  assert.equal(solapiBody.messages.length, 2);
+  assert.equal(solapiBody.allowDuplicates, true);
+  assert.match(solapiBody.messages[1].text, /BCC 상담 신청/);
+});
+
 test('admin requests require a signed login cookie', async () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
   process.env.SUPABASE_SECRET_KEY = 'test-secret';
