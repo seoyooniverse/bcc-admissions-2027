@@ -5,7 +5,7 @@ export const json = (data, status = 200) => new Response(JSON.stringify(data), {
 
 export function databaseConfig() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SECRET_KEY;
   if (!url || !key) return null;
   return { url, key };
 }
@@ -17,7 +17,6 @@ export async function databaseRequest(path, options = {}) {
     ...options,
     headers: {
       apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
@@ -71,13 +70,13 @@ export function validateApplication(input) {
     const consultation_method = String(input.method || '');
     if (!availableTimes(consultation_date).includes(consultation_time)
         || !isFutureSlot(consultation_date, consultation_time)
-        || !['학교 방문 대면', '교내 대면', '전화'].includes(consultation_method)) return null;
+        || !['명지대학교 방문 상담(권장)', '온라인 혹은 유선 상담', '학교 방문 대면', '교내 대면', '전화'].includes(consultation_method)) return null;
     return { ...base, consultation_date, consultation_time, consultation_method };
   }
   const callback_time = String(input.callbackTime || '');
   const callback_method = String(input.callbackMethod || '');
   if (!['오후', '저녁', '별도 협의'].includes(callback_time)
-      || !['학교 방문 대면', '교내 대면', '전화', '실시간 온라인 희망', '주말 상담 희망'].includes(callback_method)) return null;
+      || !['명지대학교 방문 상담(권장)', '온라인 혹은 유선 상담', '학교 방문 대면', '교내 대면', '전화', '실시간 온라인 희망', '주말 상담 희망'].includes(callback_method)) return null;
   return { ...base, callback_time, callback_method };
 }
 
