@@ -30,7 +30,7 @@ export const validPhone = value => /^01[016789]\d{7,8}$/.test(value);
 const pad = n => String(n).padStart(2, '0');
 
 export function availableTimes(date) {
-  if (!/^2026-(11|12)-\d{2}$/.test(date)) return [];
+  if (!/^2026-12-\d{2}$/.test(date)) return [];
   const [year, month, day] = date.split('-').map(Number);
   const parsed = new Date(Date.UTC(year, month - 1, day));
   if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) return [];

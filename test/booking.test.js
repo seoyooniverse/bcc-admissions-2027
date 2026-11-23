@@ -13,12 +13,13 @@ test.afterEach(() => {
 });
 
 test('only declared 30-minute slots are accepted', () => {
-  assert.deepEqual(availableTimes('2026-11-17').slice(0, 2), ['10:00–10:30', '10:30–11:00']);
-  assert.equal(availableTimes('2026-11-20').length, 0);
-  assert.equal(availableTimes('2026-11-31').length, 0);
+  assert.deepEqual(availableTimes('2026-12-01').slice(0, 2), ['10:00–10:30', '10:30–11:00']);
+  assert.equal(availableTimes('2026-12-04').length, 0);
+  assert.equal(availableTimes('2026-12-32').length, 0);
+  assert.equal(availableTimes('2026-11-24').length, 0);
   const application = {
     kind: 'booking', major: 'media', name: '홍길동', phone: '010-1234-5678',
-    role: 'student', consent: true, date: '2026-12-01', time: '10:00–10:30', method: '교내 대면',
+    role: 'student', consent: true, date: '2026-12-01', time: '10:00–10:30', method: '명지대학교 방문 상담(권장)',
   };
   assert.equal(validateApplication(application)?.phone, '01012345678');
   assert.equal(validateApplication({ ...application, time: '12:00–12:30' }), null);
@@ -27,7 +28,7 @@ test('only declared 30-minute slots are accepted', () => {
 
 test('duplicate booking returns conflict and sends no SMS', async () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
+  process.env.SUPABASE_SECRET_KEY = 'test-key';
   let calls = 0;
   globalThis.fetch = async () => {
     calls++;
@@ -37,7 +38,7 @@ test('duplicate booking returns conflict and sends no SMS', async () => {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       kind: 'booking', major: 'media', name: '홍길동', phone: '01012345678',
-      role: 'student', consent: true, date: '2026-12-01', time: '10:00–10:30', method: '교내 대면',
+      role: 'student', consent: true, date: '2026-12-01', time: '10:00–10:30', method: '명지대학교 방문 상담(권장)',
     }),
   });
   const response = await POST(request);
@@ -48,7 +49,7 @@ test('duplicate booking returns conflict and sends no SMS', async () => {
 
 test('slot endpoint reveals booked times without personal data', async () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
+  process.env.SUPABASE_SECRET_KEY = 'test-key';
   globalThis.fetch = async () => new Response(JSON.stringify([
     { consultation_date: '2026-12-01', consultation_time: '10:00–10:30', applicant_name: '비공개' },
   ]));
@@ -61,7 +62,7 @@ test('slot endpoint reveals booked times without personal data', async () => {
 
 test('successful booking is stored before notification status is updated', async () => {
   process.env.SUPABASE_URL = 'https://example.supabase.co';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
+  process.env.SUPABASE_SECRET_KEY = 'test-key';
   delete process.env.SOLAPI_API_KEY;
   const calls = [];
   globalThis.fetch = async (url, options) => {
@@ -74,7 +75,7 @@ test('successful booking is stored before notification status is updated', async
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       kind: 'booking', major: 'webtoon', name: '홍길동', phone: '01012345678',
-      role: 'parent', consent: true, date: '2026-12-01', time: '10:00–10:30', method: '교내 대면',
+      role: 'parent', consent: true, date: '2026-12-01', time: '10:00–10:30', method: '명지대학교 방문 상담(권장)',
     }),
   });
   const response = await POST(request);

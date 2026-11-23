@@ -2,7 +2,7 @@ import { databaseRequest, json } from './_shared.js';
 
 export async function GET(request) {
   const month = new URL(request.url).searchParams.get('month');
-  if (!/^2026-(11|12)$/.test(month || '')) return json({ error: '잘못된 조회 기간입니다.' }, 400);
+  if (month !== '2026-12') return json({ error: '잘못된 조회 기간입니다.' }, 400);
   try {
     const query = new URLSearchParams({
       select: 'consultation_date,consultation_time',
@@ -10,7 +10,7 @@ export async function GET(request) {
       status: 'eq.confirmed',
       consultation_date: `gte.${month}-01`,
     });
-    query.append('consultation_date', `lt.${month === '2026-11' ? '2026-12-01' : '2027-01-01'}`);
+    query.append('consultation_date', 'lt.2027-01-01');
     const { response, body } = await databaseRequest(`consultation_requests?${query}`);
     if (!response.ok) throw new Error('Database read failed');
     return json({ booked: body.map(row => `${row.consultation_date}|${row.consultation_time}`) });

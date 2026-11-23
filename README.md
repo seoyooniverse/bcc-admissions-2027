@@ -5,7 +5,7 @@
 ## 실제 접수 연결
 
 1. Supabase 프로젝트를 만든 뒤 SQL Editor에서 `schema.sql`을 실행합니다. 이 스크립트는 30분 예약 시간의 중복을 막는 고유 인덱스와 180일 후 개인정보 삭제 작업을 만듭니다.
-2. Vercel 프로젝트 `bcc-admissions-2027`의 Settings → Environment Variables에 `.env.example`에 적힌 6개 값을 Production 환경으로 추가합니다. `SUPABASE_SERVICE_ROLE_KEY`와 솔라피 비밀키는 브라우저 코드나 GitHub에 올리지 않습니다.
+2. Vercel 프로젝트 `bcc-admissions-2027`의 Settings → Environment Variables에 `.env.example`에 적힌 6개 값을 Production 환경으로 추가합니다. `SUPABASE_SECRET_KEY`와 솔라피 비밀키는 브라우저 코드나 GitHub에 올리지 않습니다.
 3. 솔라피에 발신번호를 등록하고, `SOLAPI_SENDER_NUMBER`와 `CONSULTATION_MANAGER_NUMBER`를 설정합니다. 담당자 번호가 비어 있으면 신청자 문자만 전송됩니다.
 4. 환경변수를 추가한 뒤 Vercel에서 새 배포를 실행합니다. 기존 배포에는 새 환경변수가 적용되지 않습니다.
 5. 본인 번호로 예약 1건과 다른 시간 상담 요청 1건을 시험합니다. 동일 시간 중복 신청은 거절되고, 예약 완료 시간은 회색으로 표시되는지 확인합니다. Supabase의 `consultation_requests`에서 접수 및 `sms_status`를 확인합니다.

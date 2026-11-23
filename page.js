@@ -9,7 +9,7 @@ if (major === 'media' || major === 'webtoon') {
   }
 }
 
-let month = 10;
+let month = 11;
 let selectedDate = '';
 let selectedTime = '';
 let mode = 'booking';
@@ -103,8 +103,6 @@ function renderCalendar() {
   calendar.replaceChildren();
   const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   document.getElementById('month-label').textContent = '2026년 ' + (month + 1) + '월';
-  document.getElementById('previous-month').disabled = month === 10;
-  document.getElementById('next-month').disabled = month === 11;
   const start = new Date(2026, month, 1).getDay();
   for (let i = 0; i < start; i++) calendar.append(document.createElement('span'));
   const days = new Date(2026, month + 1, 0).getDate();
@@ -131,8 +129,6 @@ function renderCalendar() {
   }
 }
 
-document.getElementById('previous-month').addEventListener('click', () => { month = 10; selectedDate = ''; selectedTime = ''; renderCalendar(); renderTimes(); loadSlots(); updateSummary(); });
-document.getElementById('next-month').addEventListener('click', () => { month = 11; selectedDate = ''; selectedTime = ''; renderCalendar(); renderTimes(); loadSlots(); updateSummary(); });
 for (const button of document.querySelectorAll('[data-mode]')) {
   button.addEventListener('click', () => {
     mode = button.dataset.mode;
